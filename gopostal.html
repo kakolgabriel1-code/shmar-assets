@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GoPostal – obrazy magazynu</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#080b0d;color:#fff;font-family:Arial,Helvetica,sans-serif}
+    body{min-height:100vh}
+    .nav{position:sticky;top:0;z-index:10;display:flex;gap:10px;flex-wrap:wrap;padding:12px;background:#0c1013;border-bottom:1px solid #25302a}
+    .nav a{color:#fff;text-decoration:none;background:#173b27;border:1px solid #2c7447;padding:10px 14px;border-radius:8px;font-weight:700}
+    section{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+    figure{margin:0;width:min(100%,1122px)}
+    img{display:block;width:100%;height:auto;max-height:94vh;object-fit:contain;background:#000}
+    figcaption{text-align:center;padding:10px 0 0;color:#9fb8a8;font-size:14px}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="#figurki">FIGURKI</a>
+    <a href="#przekaski">PRZEKĄSKI</a>
+    <a href="#towar">TOWAR SPECJALNY</a>
+  </nav>
+
+  <section id="figurki">
+    <figure>
+      <img src="gopostal_figurki.png" alt="GoPostal – Figurki">
+      <figcaption>GoPostal – FIGURKI</figcaption>
+    </figure>
+  </section>
+
+  <section id="przekaski">
+    <figure>
+      <img src="gopostal_przekaski.png" alt="GoPostal – Przekąski">
+      <figcaption>GoPostal – PRZEKĄSKI</figcaption>
+    </figure>
+  </section>
+
+  <section id="towar">
+    <figure>
+      <img src="gopostal_towar_specjalny.png" alt="GoPostal – Towar specjalny">
+      <figcaption>GoPostal – TOWAR SPECJALNY</figcaption>
+    </figure>
+  </section>
+</body>
+</html>
