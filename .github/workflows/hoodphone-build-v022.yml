@@ -38,13 +38,18 @@ jobs:
           unzip -o source.zip
           python3 - <<'PY'
           from pathlib import Path
-          p = Path("src/main/java/pl/hoodstories/hoodphone/ModSounds.java")
-          s = p.read_text()
+
+          sounds = Path("src/main/java/pl/hoodstories/hoodphone/ModSounds.java")
+          s = sounds.read_text()
           s = s.replace(
               "SoundEvent.createVariableRangeEvent(new ResourceLocation(HoodPhone.MODID, name))",
               "new SoundEvent(new ResourceLocation(HoodPhone.MODID, name))"
           )
-          p.write_text(s)
+          sounds.write_text(s)
+
+          events = Path("src/main/java/pl/hoodstories/hoodphone/PhoneEvents.java")
+          s = events.read_text().replace("event.getEntityItem()", "event.getEntity()")
+          events.write_text(s)
           PY
 
       - name: Build real Forge reobfuscated jar
