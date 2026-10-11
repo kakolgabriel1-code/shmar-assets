@@ -1,12 +1,9 @@
-name: HoodPhone Build v022
+name: HoodPhone Build v030
 
 on:
   push:
     branches:
-      - hoodphone-build-v022
-  pull_request:
-    branches:
-      - main
+      - hoodphone-ui-v030
   workflow_dispatch:
 
 jobs:
@@ -31,11 +28,16 @@ jobs:
         with:
           gradle-version: '7.6.4'
 
-      - name: Reconstruct source
+      - name: Reconstruct and patch source
         run: |
           cat src_00a.b64 src_00b.b64 src_01.b64 src_02.b64 src_03.b64 | base64 -d > source.zip
           unzip -t source.zip
           unzip -o source.zip
+
+          base64 -d ui_java.b64 > ui_java.zip
+          unzip -t ui_java.zip
+          unzip -o ui_java.zip -d src/main/java
+
           python3 - <<'PY'
           from pathlib import Path
 
@@ -50,14 +52,22 @@ jobs:
           events = Path("src/main/java/pl/hoodstories/hoodphone/PhoneEvents.java")
           s = events.read_text().replace("event.getEntityItem()", "event.getEntity()")
           events.write_text(s)
+
+          mods = Path("src/main/resources/META-INF/mods.toml")
+          s = mods.read_text().replace('version="0.2.0"', 'version="0.3.0"')
+          mods.write_text(s)
+
+          build = Path("build.gradle")
+          s = build.read_text().replace("version = '0.2.2'", "version = '0.3.0'")
+          build.write_text(s)
           PY
 
       - name: Build real Forge reobfuscated jar
-        run: gradle build --stacktrace --no-daemon
+        run: gradle clean build --stacktrace --no-daemon
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: hoodphone-v022
+          name: hoodphone-v030-premium-ui
           path: hoodphone_build/build/libs/*.jar
           if-no-files-found: error
