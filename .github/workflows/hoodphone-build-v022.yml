@@ -56,6 +56,18 @@ jobs:
           s = events.read_text().replace("event.getEntityItem()", "event.getEntity()")
           events.write_text(s)
 
+          ui = Path("src/main/java/pl/hoodstories/hoodphone/client/PhoneUi.java")
+          s = ui.read_text()
+          s = s.replace(
+              "fillGradient(pose, x, y, x+w, y+h, top, bottom);",
+              "fill(pose, x, y, x+w, y+h/2, top);\n        fill(pose, x, y+h/2, x+w, y+h, bottom);"
+          )
+          s = s.replace(
+              "fillGradient(pose, x+2, y+2, x+w-2, y+h/3, 0x22FFFFFF, 0x00FFFFFF);",
+              "fill(pose, x+2, y+2, x+w-2, y+h/3, 0x11FFFFFF);"
+          )
+          ui.write_text(s)
+
           build = Path("build.gradle")
           s = build.read_text().replace("version = '0.2.2'", "version = '0.3.0'")
           build.write_text(s)
