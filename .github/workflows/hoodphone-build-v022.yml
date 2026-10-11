@@ -56,10 +56,6 @@ jobs:
           s = events.read_text().replace("event.getEntityItem()", "event.getEntity()")
           events.write_text(s)
 
-          mods = Path("src/main/resources/META-INF/mods.toml")
-          s = mods.read_text().replace('version="0.2.0"', 'version="0.3.0"')
-          mods.write_text(s)
-
           build = Path("build.gradle")
           s = build.read_text().replace("version = '0.2.2'", "version = '0.3.0'")
           build.write_text(s)
