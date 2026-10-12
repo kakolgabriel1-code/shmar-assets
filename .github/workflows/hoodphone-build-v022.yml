@@ -1,0 +1,148 @@
+name: HoodPhone Build v030
+
+on:
+  push:
+    branches:
+      - hoodphone-ui-v030
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hoodphone_build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '7.6.4'
+
+      - name: Reconstruct and patch source
+        run: |
+          cat src_00a.b64 src_00b.b64 src_01.b64 src_02.b64 src_03.b64 | base64 -d > source.zip
+          unzip -t source.zip
+          unzip -o source.zip
+
+          base64 -d ui_java.b64 > ui_java.zip
+          unzip -t ui_java.zip
+          unzip -o ui_java.zip -d src/main/java
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          sounds = Path("src/main/java/pl/hoodstories/hoodphone/ModSounds.java")
+          s = sounds.read_text()
+          s = s.replace(
+              "SoundEvent.createVariableRangeEvent(new ResourceLocation(HoodPhone.MODID, name))",
+              "new SoundEvent(new ResourceLocation(HoodPhone.MODID, name))"
+          )
+          sounds.write_text(s)
+
+          events = Path("src/main/java/pl/hoodstories/hoodphone/PhoneEvents.java")
+          s = events.read_text().replace("event.getEntityItem()", "event.getEntity()")
+          events.write_text(s)
+
+          resources = Path("src/main/resources")
+          meta = resources/"META-INF"
+          meta.mkdir(parents=True, exist_ok=True)
+          mods = meta/"mods.toml"
+          if mods.exists():
+              content = mods.read_text().replace('version="0.2.0"', 'version="0.3.0"')
+          else:
+              content = """modLoader="javafml"
+loaderVersion="[43,)"
+license="All rights reserved"
+[[mods]]
+modId="hoodphone"
+version="0.3.0"
+displayName="HoodPhone — iPhone 18 Pro"
+description='''Phone, calls and messaging for Hood Stories Chicago'''
+[[dependencies.hoodphone]]
+modId="forge"
+mandatory=true
+versionRange="[43,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.hoodphone]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.19.2,1.19.3)"
+ordering="NONE"
+side="BOTH"
+"""
+          mods.write_text(content)
+          pack=resources/"pack.mcmeta"
+          if not pack.exists():
+              pack.write_text('{"pack":{"pack_format":9,"description":"HoodPhone iPhone 18 Pro"}}')
+          (resources/"assets/hoodphone/models/item").mkdir(parents=True, exist_ok=True)
+
+          build = Path("build.gradle")
+          s = build.read_text().replace("version = '0.2.2'", "version = '0.3.0'")
+          build.write_text(s)
+          PY
+
+      - name: Generate original high-resolution phone item artwork
+        run: python3 premium_item_assets.py
+
+      - name: Validate generated assets and mod metadata
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, struct
+          root=pathlib.Path("src/main/resources")
+          models=list((root/"assets/hoodphone/models/item").glob("*.json"))
+          assert models, "Missing phone item models"
+          for model in models:
+              d=json.loads(model.read_text())
+              assert "parent" in d or "elements" in d, model
+              for element in d.get("elements", []):
+                  assert len(element["from"])==3 and len(element["to"])==3, model
+                  assert all(0<=v<=16 for v in element["from"]+element["to"]), model
+          textures=list((root/"assets/hoodphone/textures/item").glob("iphone18pro_*.png"))
+          assert len(textures)==4, f"Expected four finishes, got {len(textures)}"
+          for texture in textures:
+              data=texture.read_bytes()
+              assert data[:8]==bytes((137,80,78,71,13,10,26,10)), texture
+              w,h=struct.unpack(">II",data[16:24])
+              assert w>=64 and h>=128,texture
+          assert (root/"META-INF/mods.toml").exists(), "Forge metadata absent"
+          print("Validated",len(models),"models and",len(textures),"textures")
+          PY
+
+      - name: Build real Forge reobfuscated jar
+        run: gradle clean build --stacktrace --no-daemon
+
+      - name: Verify compiled Forge mod jar
+        run: |
+          python3 - <<'PY'
+          import zipfile,pathlib
+          jars=[p for p in pathlib.Path("build/libs").glob("*.jar") if not p.name.endswith("-sources.jar")]
+          assert jars,"Forge JAR not produced"
+          for path in jars:
+              with zipfile.ZipFile(path) as z:
+                  files=set(z.namelist())
+                  assert z.testzip() is None, "Corrupted jar"
+                  assert "META-INF/mods.toml" in files, "Missing Forge mods.toml"
+                  assert any(p.endswith(".class") and "hoodphone" in p.lower() for p in files), "Missing HoodPhone classes"
+                  print("Structural verification PASS:",path)
+          PY
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: hoodphone-v030-premium-ui
+          path: hoodphone_build/build/libs/*.jar
+          if-no-files-found: error
