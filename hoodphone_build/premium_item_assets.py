@@ -97,6 +97,6 @@ for model in model_dir.glob("*.json"):
         continue  # preserve any existing custom 3D mesh
     doc["parent"] = "minecraft:item/generated"
     doc["textures"] = {"layer0": "hoodphone:item/iphone18pro_" + finish}
-    model.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    model.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     patched += 1
 print("Premium artwork linked to", patched, "existing phone item models")
