@@ -105,8 +105,62 @@ for model in model_dir.glob("*.json"):
         continue
     if not isinstance(doc, dict) or "elements" in doc:
         continue  # preserve any existing custom 3D mesh
-    doc["parent"] = "minecraft:item/generated"
-    doc["textures"] = {"layer0": "hoodphone:item/iphone18pro_" + finish}
+    # Proper 3D geometry: chassis, full-width camera plateau and raised lenses.
+    # Matches the iPhone 18 Pro rear-camera layout; not a flat item sprite.
+    def element(frm, to, faces):
+        return {"from": frm, "to": to, "faces": {side: {"texture": tex, "uv": uv}
+                 for side, tex, uv in faces}}
+    bodytex = "#body"
+    glass = "#glass"
+    dark = "#lens"
+    all_sides = ("north", "south", "east", "west", "up", "down")
+    def cuboid(frm, to, tex, uv=(0, 0, 16, 16)):
+        return element(frm, to, [(face, tex, list(uv)) for face in all_sides])
+    elements = [
+        cuboid([4.25, 0.5, 7.65], [11.75, 15.5, 8.45], bodytex),
+        cuboid([4.36, 11.25, 8.45], [11.64, 15.18, 8.93], bodytex),
+        cuboid([4.6, 1.0, 7.55], [11.4, 15.0, 7.65], glass),
+    ]
+    # 16-gon approximates a circular raised lens while remaining vanilla JSON.
+    import math as _math
+    def lens(cx, cy, outer_r, z0, z1, texture):
+        n = 16
+        for i in range(n):
+            t = 2 * _math.pi * i / n
+            t2 = 2 * _math.pi * (i + 1) / n
+            # Segment represented by a shallow rectangular slice for broad mod compatibility.
+            ax = cx + outer_r * _math.cos(t)
+            ay = cy + outer_r * _math.sin(t)
+            bx = cx + outer_r * _math.cos(t2)
+            by = cy + outer_r * _math.sin(t2)
+            lo_x, hi_x = sorted((ax, bx))
+            lo_y, hi_y = sorted((ay, by))
+            if hi_x - lo_x < 0.03: hi_x += .03
+            if hi_y - lo_y < 0.03: hi_y += .03
+            elements.append(cuboid([lo_x, lo_y, z0], [hi_x, hi_y, z1], texture))
+    for cx, cy in ((5.8, 14.15), (8.15, 13.2), (5.8, 12.3)):
+        lens(cx, cy, .72, 8.94, 9.2, dark)
+        lens(cx, cy, .48, 9.2, 9.26, glass)
+    lens(10.5, 14.2, .19, 8.94, 8.98, "#flash")
+    lens(10.5, 12.55, .2, 8.94, 8.99, dark)
+    doc = {
+        "textures": {
+            "body": "hoodphone:item/iphone18pro_" + finish,
+            "glass": "hoodphone:item/iphone18pro_" + finish,
+            "lens": "minecraft:block/black_concrete",
+            "flash": "minecraft:block/sea_lantern"
+        },
+        "elements": elements,
+        "display": {
+            "gui": {"rotation": [22, 145, 0], "translation": [0, 0, 0], "scale": [0.8, 0.8, 0.8]},
+            "firstperson_righthand": {"rotation": [5, 165, 0], "translation": [2.0, 0.0, 0.0], "scale": [0.9, 0.9, 0.9]},
+            "firstperson_lefthand": {"rotation": [5, -165, 0], "translation": [-2.0, 0.0, 0.0], "scale": [0.9, 0.9, 0.9]},
+            "thirdperson_righthand": {"rotation": [0, 90, 0], "scale": [0.54, 0.54, 0.54]},
+            "thirdperson_lefthand": {"rotation": [0, -90, 0], "scale": [0.54, 0.54, 0.54]},
+            "ground": {"scale": [0.45, 0.45, 0.45]},
+            "fixed": {"rotation": [0, 180, 0], "scale": [0.8, 0.8, 0.8]}
+        }
+    }
     model.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     patched += 1
 print("Premium artwork linked to", patched, "existing phone item models")
