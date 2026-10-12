@@ -94,6 +94,13 @@ print("Created", len(COLORS), "official iPhone 18 Pro finish textures in", TARGE
 # server-side logic or other mod items.
 model_dir = ROOT / "models" / "item"
 patched = 0
+# Recovered source archive can contain Java classes but no original model assets.
+# Create actual Forge item models for each finish if the resource folder is empty.
+model_dir.mkdir(parents=True, exist_ok=True)
+for finish in OFFICIAL_FINISHES:
+    model = model_dir / ("iphone18pro_" + finish + ".json")
+    if not model.exists():
+        model.write_text('{"parent":"minecraft:item/generated","textures":{"layer0":"hoodphone:item/iphone18pro_' + finish + '"}}')
 for model in model_dir.glob("*.json"):
     name = model.stem.lower()
     if not ("phone" in name or "iphone" in name):
