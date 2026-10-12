@@ -41,6 +41,9 @@ jobs:
           unzip -t ui_java.zip
           unzip -o ui_java.zip -d src/main/java
 
+          # Premium UI replaces the shared shell; application/network logic stays intact.
+          cp overrides/pl/hoodstories/hoodphone/client/PhoneUi.java src/main/java/pl/hoodstories/hoodphone/client/PhoneUi.java
+
           python3 - <<'PY'
           from pathlib import Path
 
