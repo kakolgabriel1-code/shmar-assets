@@ -9,12 +9,22 @@ ROOT = Path("src/main/resources/assets/hoodphone")
 TARGET = ROOT / "textures" / "item"
 TARGET.mkdir(parents=True, exist_ok=True)
 W, H, SS = 72, 144, 3
+# Only official iPhone 18 Pro finishes, verified against Apple (2026).
+OFFICIAL_FINISHES = ("black", "silver", "glacier", "burgundy")
+DISPLAY_NAMES_PL = {
+    "black": "Czarny",
+    "silver": "Srebrny",
+    "glacier": "Błękit lodowca",
+    "burgundy": "Burgund",
+}
 COLORS = {
     "black": (37, 40, 45),
     "silver": (196, 202, 207),
     "glacier": (172, 191, 207),
     "burgundy": (105, 48, 61),
 }
+
+assert tuple(COLORS) == OFFICIAL_FINISHES, "Unsupported iPhone 18 Pro color"
 
 def png(path, pix, width, height):
     def chunk(typ, payload):
@@ -78,7 +88,7 @@ def render(name, body):
 
 for name, rgb in COLORS.items():
     render(name, rgb)
-print("Created", len(COLORS), "original HoodPhone premium phone textures in", TARGET)
+print("Created", len(COLORS), "official iPhone 18 Pro finish textures in", TARGET)
 
 # Connect generated artwork to pre-existing phone item models without touching
 # server-side logic or other mod items.
