@@ -56,9 +56,39 @@ jobs:
           s = events.read_text().replace("event.getEntityItem()", "event.getEntity()")
           events.write_text(s)
 
-          mods = Path("src/main/resources/META-INF/mods.toml")
-          s = mods.read_text().replace('version="0.2.0"', 'version="0.3.0"')
-          mods.write_text(s)
+          resources = Path("src/main/resources")
+          meta = resources/"META-INF"
+          meta.mkdir(parents=True, exist_ok=True)
+          mods = meta/"mods.toml"
+          if mods.exists():
+              content = mods.read_text().replace('version="0.2.0"', 'version="0.3.0"')
+          else:
+              content = """modLoader="javafml"
+loaderVersion="[43,)"
+license="All rights reserved"
+[[mods]]
+modId="hoodphone"
+version="0.3.0"
+displayName="HoodPhone — iPhone 18 Pro"
+description='''Phone, calls and messaging for Hood Stories Chicago'''
+[[dependencies.hoodphone]]
+modId="forge"
+mandatory=true
+versionRange="[43,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.hoodphone]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.19.2,1.19.3)"
+ordering="NONE"
+side="BOTH"
+"""
+          mods.write_text(content)
+          pack=resources/"pack.mcmeta"
+          if not pack.exists():
+              pack.write_text('{"pack":{"pack_format":9,"description":"HoodPhone iPhone 18 Pro"}}')
+          (resources/"assets/hoodphone/models/item").mkdir(parents=True, exist_ok=True)
 
           build = Path("build.gradle")
           s = build.read_text().replace("version = '0.2.2'", "version = '0.3.0'")
