@@ -79,3 +79,24 @@ def render(name, body):
 for name, rgb in COLORS.items():
     render(name, rgb)
 print("Created", len(COLORS), "original HoodPhone premium phone textures in", TARGET)
+
+# Connect generated artwork to pre-existing phone item models without touching
+# server-side logic or other mod items.
+model_dir = ROOT / "models" / "item"
+patched = 0
+for model in model_dir.glob("*.json"):
+    name = model.stem.lower()
+    if not ("phone" in name or "iphone" in name):
+        continue
+    finish = next((finish for finish in COLORS if finish in name), "black")
+    try:
+        doc = json.loads(model.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        continue
+    if not isinstance(doc, dict) or "elements" in doc:
+        continue  # preserve any existing custom 3D mesh
+    doc["parent"] = "minecraft:item/generated"
+    doc["textures"] = {"layer0": "hoodphone:item/iphone18pro_" + finish}
+    model.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    patched += 1
+print("Premium artwork linked to", patched, "existing phone item models")
