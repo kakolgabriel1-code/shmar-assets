@@ -65,6 +65,9 @@ jobs:
           build.write_text(s)
           PY
 
+      - name: Generate original high-resolution phone item artwork
+        run: python3 premium_item_assets.py
+
       - name: Build real Forge reobfuscated jar
         run: gradle clean build --stacktrace --no-daemon
 
