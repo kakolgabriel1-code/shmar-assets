@@ -68,8 +68,47 @@ jobs:
       - name: Generate original high-resolution phone item artwork
         run: python3 premium_item_assets.py
 
+      - name: Validate generated assets and mod metadata
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, struct
+          root=pathlib.Path("src/main/resources")
+          models=list((root/"assets/hoodphone/models/item").glob("*.json"))
+          assert models, "Missing phone item models"
+          for model in models:
+              d=json.loads(model.read_text())
+              assert "parent" in d or "elements" in d, model
+              for element in d.get("elements", []):
+                  assert len(element["from"])==3 and len(element["to"])==3, model
+                  assert all(0<=v<=16 for v in element["from"]+element["to"]), model
+          textures=list((root/"assets/hoodphone/textures/item").glob("iphone18pro_*.png"))
+          assert len(textures)==4, f"Expected four finishes, got {len(textures)}"
+          for texture in textures:
+              data=texture.read_bytes()
+              assert data[:8]==bytes((137,80,78,71,13,10,26,10)), texture
+              w,h=struct.unpack(">II",data[16:24])
+              assert w>=64 and h>=128,texture
+          assert (root/"META-INF/mods.toml").exists(), "Forge metadata absent"
+          print("Validated",len(models),"models and",len(textures),"textures")
+          PY
+
       - name: Build real Forge reobfuscated jar
         run: gradle clean build --stacktrace --no-daemon
+
+      - name: Verify compiled Forge mod jar
+        run: |
+          python3 - <<'PY'
+          import zipfile,pathlib
+          jars=[p for p in pathlib.Path("build/libs").glob("*.jar") if not p.name.endswith("-sources.jar")]
+          assert jars,"Forge JAR not produced"
+          for path in jars:
+              with zipfile.ZipFile(path) as z:
+                  files=set(z.namelist())
+                  assert z.testzip() is None, "Corrupted jar"
+                  assert "META-INF/mods.toml" in files, "Missing Forge mods.toml"
+                  assert any(p.endswith(".class") and "hoodphone" in p.lower() for p in files), "Missing HoodPhone classes"
+                  print("Structural verification PASS:",path)
+          PY
 
       - name: Upload
         uses: actions/upload-artifact@v4
